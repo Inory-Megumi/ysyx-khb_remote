@@ -1,24 +1,23 @@
 #setup variables
-
-
-
-VERILATOR_INPUT = ./vsrc/top.v  ./csrc/sim_main.cpp 
+VSRCS = ./vsrc/top.v  
+CSRCS = ./csrc/sim_main.cpp 
 Configuration = -Os -x-assign 0 -Wall --trace --assert --coverage
-top = top
+TOPNAME = top
+VCD_FILES = ./logs/testbench.vcd
 ############################################################
-
+default:
+	verilator -cc --exe $(Configuration) --build -j $(VSRCS) $(CSRCS)
+	@echo "vcd files dumped"
 all:
-	@echo "Write this Makefile by your self."
-
+	default
 sim:
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
-	verilator -cc --exe $(Configuration) --build -j $(VERILATOR_INPUT)
-	obj_dir/V$(top)
-sim_nvboard:
-
-
-
+	@echo "*****GTKWAVES RUNNING*****"
+	gtkwave $(VCD_FILES)
+run:
+	@echo "*****running******"
+	obj_dir/V$(TOPNAME)
 clean:
-	-rm -rf obj_dir logs *.log *.dmp *.vpd core
+	-rm -rf obj_dir  logs *.log *.dmp *.vpd core
 	
 include ../Makefile
