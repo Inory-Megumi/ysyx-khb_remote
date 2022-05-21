@@ -1,23 +1,35 @@
-#setup variables
-VSRCS = ./vsrc/top.v  
-CSRCS = ./csrc/sim_main.cpp 
-Configuration = -Os -x-assign 0 -Wall --trace --assert --coverage
-TOPNAME = top
-VCD_FILES = ./logs/testbench.vcd
-############################################################
-default:
-	verilator -cc --exe $(Configuration) --build -j $(VSRCS) $(CSRCS)
-	@echo "vcd files dumped"
-all:
-	default
+BUILD_DIR = ./build
+
+test:
+	mill -i __.test
+
+verilog:
+	$(call git_commit, "generate verilog")
+	mkdir -p $(BUILD_DIR)
+	mill -i __.test.runMain Elaborate -td $(BUILD_DIR)
+
+help:
+	mill -i __.test.runMain Elaborate --help
+
+compile:
+	mill -i __.compile
+
+bsp:
+	mill -i mill.bsp.BSP/install
+
+reformat:
+	mill -i __.reformat
+
+checkformat:
+	mill -i __.checkFormat
+
+clean:
+	-rm -rf $(BUILD_DIR)
+
+.PHONY: test verilog help compile bsp reformat checkformat clean
+
 sim:
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
-	@echo "*****GTKWAVES RUNNING*****"
-	gtkwave $(VCD_FILES)
-run:
-	@echo "*****running******"
-	obj_dir/V$(TOPNAME)
-clean:
-	-rm -rf obj_dir  logs *.log *.dmp *.vpd core
-	
+	@echo "Write this Makefile by yourself."
+
 include ../Makefile
