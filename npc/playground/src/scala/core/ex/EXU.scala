@@ -1,0 +1,2 @@
+package kcore
+//ex top
