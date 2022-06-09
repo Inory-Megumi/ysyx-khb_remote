@@ -9,6 +9,7 @@ trait IOConfig {
   val RegfileLen = 5
   val RegfileNum = 1 << RegfileLen
   val ISALen     = 6
+  val AluOpLen  = 4
   // mem
   val MaskLen = 8
   val LDSize  = 3
@@ -109,4 +110,15 @@ trait InstConfig extends IOConfig {
   // special inst
   val customInst = "h0000007b".U(InstLen.W)
   val haltInst   = "h0000006b".U(InstLen.W)
-}
+
+  //AluOP
+  val AluOpADD = "b0000".U(AluOpLen.W)
+  val AluOpSUB = "b0001".U(AluOpLen.W)
+  val AluOpSLL = "b0010".U(AluOpLen.W)
+  val AluOpSLT = "b0100".U(AluOpLen.W)
+  val AluOpSLTU = "b0110".U(AluOpLen.W)
+  val AluOpXOR = "b1000".U(AluOpLen.W)
+  val AluOpSRL = "b1010".U(AluOpLen.W)
+  val AluOpSRA = "b1011".U(AluOpLen.W)
+  val AluOpOR = "b1100".U(AluOpLen.W)
+  val AluOpAND = "b1110".U(AluOpLen.W)}

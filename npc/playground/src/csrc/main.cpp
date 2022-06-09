@@ -46,7 +46,8 @@ int main(int argc, char *argv[])
     emu = new Emulator(argc, argv);
     printf("Start simulating ...\n");
     sim_start_time = chrono::system_clock::now();
-    while (!Verilated::gotFinish() && signal_received == 0  && !stop)
+    int n = 500;
+    while (!Verilated::gotFinish() && signal_received == 0  && !stop && n--)
     {
         emu->step();
     }

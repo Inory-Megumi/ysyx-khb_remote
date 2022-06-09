@@ -1,7 +1,7 @@
 VERILATOR = verilator
 CHISEL_BUILD_DIR = ./chisel_build
 MILL_OUT_DIR = ./out
-CHISEL_TOP = kcore
+CHISEL_TOP =  kcore
 VSRC_HOME += ./playground/src/vsrc
 verilog = ./playground/src/vsrc/$(CHISEL_TOP).v
 ###### chisel target ######
@@ -12,7 +12,9 @@ verilog:
 	$(call git_commit, "generate verilog")
 	mkdir -p $(CHISEL_BUILD_DIR)
 	mill -i __.test.runMain top.Elaborate -td $(CHISEL_BUILD_DIR)
+ifeq ($(CHISEL_TOP), kcore)
 	cp $(CHISEL_BUILD_DIR)/$(CHISEL_TOP).v $(VSRC_HOME)/$(CHISEL_TOP).v
+endif
 	@echo "verilog generated"
 
 

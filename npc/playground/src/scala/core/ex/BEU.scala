@@ -5,51 +5,24 @@ import chisel3.util._
 
 class BEU extends Module with InstConfig {
   val io = IO(new Bundle {
-    val isa        = Input(UInt(InstValLen.W))
-    val imm        = Input(UInt(XLen.W))
-    val src1       = Input(UInt(XLen.W))
-    val src2       = Input(UInt(XLen.W))
-    val pc         = Input(UInt(XLen.W))
-    val branch     = Output(Bool())
-    val tgt        = Output(UInt(XLen.W))
+    val pc = Input(UInt(XLen.W))
+    val alu_res = Input(UInt(XLen.W))
+    val jalr = Input(Bool())
+    val imm = Input(UInt(XLen.W))
+    val nxtpc = Output(UInt(XLen.W))
+    val pc_seq = Output(UInt(XLen.W))
+    val pc_jmp = Output(UInt(XLen.W))
+    val jtype = Input(Bool())
+    val zero = Input(Bool()) 
+    val zero_jump = Input(Bool())
+    val btype = Input(Bool())
   })
-
-  protected val b = MuxLookup(
-    io.isa,
-    false.B,
-    Seq(
-      instBEQ  -> (io.src1 === io.src2),
-      instBNE  -> (io.src1 =/= io.src2),
-      instBGEU -> (io.src1 >= io.src2),
-      instBLTU -> (io.src1 < io.src2),
-      instBGE  -> (io.src1.asSInt >= io.src2.asSInt),
-      instBLT  -> (io.src1.asSInt < io.src2.asSInt)
-    )
-  )
-
-  protected val bInst = MuxLookup(
-    io.isa,
-    false.B,
-    Seq(
-      instBEQ  -> true.B,
-      instBNE  -> true.B,
-      instBGEU -> true.B,
-      instBLTU -> true.B,
-      instBGE  -> true.B,
-      instBLT  -> true.B
-    )
-  )
-
-  protected val jal  = io.isa === instJAL
-  protected val jalr = io.isa === instJALR
-  io.branch := b | jal | jalr
-
-  io.tgt := MuxLookup(
-    io.isa,
-    (io.pc + io.imm), // NOTE: branch target
-    Seq(
-      instJAL  -> (io.pc + io.imm),
-      instJALR -> (io.src1 + io.imm)
-    )
-  )
+  val bjump = io.zero & io.zero_jump && io.btype
+  val jump = (io.jtype | bjump) 
+  val nxtpc_seq = io.pc + 4.U
+  val nxtpc_jmp = io.pc + io.imm 
+  val nxtpc_tmp = Mux(jump,nxtpc_jmp,nxtpc_seq)
+  io.nxtpc := Mux(io.jalr,io.alu_res,nxtpc_tmp)
+  io.pc_seq := nxtpc_seq
+  io.pc_jmp := nxtpc_jmp
 }
