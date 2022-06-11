@@ -1,56 +1,141 @@
-#include <cstdio>
-#include <csignal>
-#include <chrono>
-namespace chrono = std::chrono;
+#include "npc.h"
 
-#include "verilated.h" //Defines common routines
-#include "Vkcore.h"
-#include "emu.h"
-
-static int signal_received = 0;
-
-void sig_handler(int signo)
+CPU_state cpu;
+vluint64_t sim_time = 0;
+Vkcore *top = nullptr;
+VerilatedContext *contextp = nullptr;
+long img_size = 0;
+char *img_file = nullptr;
+#ifdef CONFIG_VCD
+VerilatedVcdC *vcd_ptr = nullptr;
+#endif
+#ifdef CONFIG_ITRACE
+char itrace_buf[16][100] = {0};
+int itrace_buf_cnt = 0;
+#endif
+long ld(char *img_file);
+void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
+void init_disasm(const char *triple);
+void check_state();
+#ifdef CONFIG_ITRACE
+void print_itrace()
 {
-    if (signal_received != 0)
+  puts("itrace:");
+  for (int i = 0; i < 16; i++)
+  {
+    if (strlen(itrace_buf[i]) == 0)
+      break;
+    if ((i + 1) % 16 == itrace_buf_cnt)
+      printf("-->");
+    else
+      printf("   ");
+    printf("%s\n", itrace_buf[i]);
+  }
+}
+#endif
+void exit_npc()
+{
+#ifdef CONFIG_VCD
+  vcd_ptr->close();
+  printf("vcd files dumped\n");
+#endif
+  delete top;
+  delete contextp;
+}
+/*  simulation    */
+void reset()
+{
+    for (int i = 1; i <= 10; i++)
     {
-        puts("SIGINT received, forcely shutting down.\n");
-        exit(0);
+        top->clock = 0, top->eval();
+        top->clock = 1, top->eval();
     }
-    puts("SIGINT received, gracefully shutting down... Type Ctrl+C again to stop forcely.\n");
-    signal_received = signo;
+    top->clock = 0;
+    top->reset = 0;
+    top->eval();
+}
+void cpu_sim_once()
+{//1 period
+  top->clock = 0, top->eval();
+  #ifdef CONFIG_VCD
+  vcd_ptr->dump(sim_time++);
+    #endif
+  top->clock = 1, top->eval();
+  #ifdef CONFIG_VCD
+  vcd_ptr->dump(sim_time++);
+    #endif
+}
+void exec_once()
+{
+  cpu_sim_once();
+  printf("0x%08lx: 0x%08x\n",cpu.pc,cpu.inst);
+#ifdef CONFIG_ITRACE
+  char p[100] = {0};
+  disassemble(p, 100, cpu.pc, (uint8_t *)&(cpu.inst), 4);
+  sprintf(itrace_buf[itrace_buf_cnt], "pc=0x%016lx inst=%08x %s", cpu.pc, cpu.inst, p);
+  printf("%s\n",itrace_buf[itrace_buf_cnt]);
+  itrace_buf_cnt++;
+  itrace_buf_cnt %= 16;
+#endif
+/*
+#ifdef CONFIG_VCD
+  vcd_ptr->dump(sim_time++);
+#endif */
+#ifdef CONFIG_DIFFTEST
+  ref_difftest_exec(1);
+  CPU_state ref_cpu;
+  ref_difftest_regcpy(&ref_cpu, DIFFTEST_TO_DUT);
+  printf("check at nemu_pc=%lx, npc_pc=%lx\n", cpu_npc.pc, ref_cpu.pc);
+  if (!check_regs_npc(ref_cpu))
+    exit_npc(-1);
+#endif
+  check_state();
+}
+void init_npc()
+{
+  top->reset = 1;
+  reset();
+  cpu.state = true;
+  printf("0x%08lx: 0x%08x\n",cpu.pc,cpu.inst);
 }
 
-static Emulator *emu = nullptr;
-chrono::system_clock::time_point sim_start_time;
-void release()
+static int parse_args(int argc, char *argv[])
 {
-    if (emu != nullptr)
+  if (argc == 2)
+  {
+    if (strlen(argv[1]) != 0)
     {
-        auto elapsed = chrono::duration_cast<chrono::seconds>(chrono::system_clock::now() - sim_start_time);
-        printf("Simulated %llu cycles in %lds\n",
-               emu->get_cycle(),
-               elapsed.count());
-        delete emu;
+      img_file = argv[1];
+      img_size = ld(img_file);
     }
+  }
+  return 0;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv, char **env)
 {
-    printf("Emu compiled at %s, %s\n", __DATE__, __TIME__);
+  parse_args(argc, argv);
 
-    if (signal(SIGINT, sig_handler) == SIG_ERR)
-    {
-        printf("can't catch SIGINT\n");
-    }
-    atexit(release);
-    emu = new Emulator(argc, argv);
-    printf("Start simulating ...\n");
-    sim_start_time = chrono::system_clock::now();
-    int n = 500;
-    while (!Verilated::gotFinish() && signal_received == 0  && !stop && n--)
-    {
-        emu->step();
-    }
+  contextp = new VerilatedContext;
+  contextp->commandArgs(argc, argv);
+  top = new Vkcore{contextp};
 
-    return 0;
+#ifdef CONFIG_ITRACE
+  init_disasm("riscv64-pc-linux-gnu");
+#endif
+
+#ifdef CONFIG_VCD
+  Verilated::traceEverOn(true);
+  vcd_ptr = new VerilatedVcdC;
+  top->trace(vcd_ptr, 5);
+  vcd_ptr->open("waveform.vcd");
+#endif
+  init_npc();
+  int sim_period = 20;
+  while (cpu.state && sim_period--)
+  {
+    exec_once();
+  }
+  exit_npc();
+  return 0;
 }
