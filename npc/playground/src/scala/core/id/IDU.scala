@@ -5,43 +5,47 @@ import chisel3.util._
 
 class IDU extends Module with InstConfig {
   val io = IO(new Bundle {
-    val inst = Input(UInt(InstLen.W))
-    val wdata = Input(UInt(XLen.W))
-    val aluop = Output(UInt(4.W))
-    val src1 = Output(UInt(XLen.W))
-    val src2 = Output(UInt(XLen.W))
-    val imm  = Output(UInt(XLen.W))
-    val aluoptype = Output(UInt(2.W))
-    //cu
-    val jtype = Output(Bool())
-    val jalr = Output(Bool())
-    val memread = Output(Bool())
-    val memtoreg = Output(Bool())
-    val memwrite = Output(Bool())
-    val utype = Output(Bool())
+    val if2id = Flipped(new IF2IDIO)
+    val wb2id = Flipped(new WB2IDIO)
+    val id2ex = new ID2EXIO
   })
-  protected val rs1   = io.inst(19, 15)
-  protected val rs2   = io.inst(24, 20)
-  protected val rd    = io.inst(11, 7)
-  protected val opcode= io.inst(6, 0)
+  protected val inst  = io.if2id.inst
+  protected val rs1   = inst(19, 15)
+  protected val rs2   = inst(24, 20)
+  protected val rd    = inst(11, 7)
+  protected val opcode= inst(6, 0)
   protected val controlunit = Module(new ControlUnit)
   protected val immExten    = Module(new ImmExten)
-  controlunit.io.opcode <> opcode
-  immExten.io.inst <> io.inst
-  immExten.io.instType <> controlunit.io.immtype
   protected val regfile = new RegFile
-  protected val regwren = controlunit.io.cuio.regwrite
-  io.src1    := regfile.read(rs1)
-  io.src2    := Mux(controlunit.io.cuio.alusrc,immExten.io.imm,regfile.read(rs2))
-  protected val wdata = Mux(controlunit.io.cuio.lui,immExten.io.imm,io.wdata)
-  regfile.write(regwren, rd, wdata)
-  io.jtype := controlunit.io.cuio.jtype
-  io.memread := controlunit.io.cuio.memread
-  io.memtoreg := controlunit.io.cuio.memtoreg
-  io.memwrite := controlunit.io.cuio.memwrite
-  io.utype    := controlunit.io.cuio.utype
-  io.jalr    := controlunit.io.cuio.jalr
-  io.aluop := Cat(io.inst(14,12),io.inst(30))
-  io.aluoptype := controlunit.io.aluop
-  io.imm := immExten.io.imm
+  /*              difftest                 */
+  protected val difftest = Module(new difftest)
+  difftest.io.gpr := regfile.gpr
+  /*                end                    */
+  io.id2ex.aluop := Cat(inst(14,12),inst(30))
+  io.id2ex.wreg  := rd
+  io.id2ex.pc_serial := io.if2id.pc_serial
+  io.id2ex.pc := io.if2id.pc
+  ////*                controlunit               *///////
+  controlunit.io.opcode <> opcode
+  io.id2ex.jtype := controlunit.io.cuio.jtype
+  io.id2ex.memread := controlunit.io.cuio.memread
+  io.id2ex.memtoreg:= controlunit.io.cuio.memtoreg
+  io.id2ex.memwrite:= controlunit.io.cuio.memwrite
+  io.id2ex.alusrc  := controlunit.io.cuio.alusrc
+  io.id2ex.regwrite:= controlunit.io.cuio.regwrite
+  io.id2ex.utype   := controlunit.io.cuio.utype
+  io.id2ex.lui     := controlunit.io.cuio.lui
+  io.id2ex.jalr    := controlunit.io.cuio.jalr
+  io.id2ex.aluoptype := controlunit.io.aluop
+  ////*                immeExten               *///////
+  immExten.io.inst <> inst
+  immExten.io.instType <> controlunit.io.immtype
+  io.id2ex.imm := immExten.io.imm
+  ////*                regfile               *///////
+  io.id2ex.src1    := regfile.read(rs1)
+  io.id2ex.src2    := regfile.read(rs2)
+  val regwrite      = io.wb2id.regwrite
+  //io.src2    := Mux(controlunit.io.cuio.alusrc,immExten.io.imm,regfile.read(rs2))
+  //protected val wdata = Mux(controlunit.io.cuio.lui,immExten.io.imm,io.wdata)
+  regfile.write(regwrite, io.wb2id.wreg, io.wb2id.wdata)
 }

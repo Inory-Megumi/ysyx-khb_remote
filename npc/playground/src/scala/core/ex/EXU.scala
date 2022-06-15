@@ -6,38 +6,47 @@ import chisel3.util._
 
 class EXU extends Module with InstConfig {
   val io = IO(new Bundle {
-    val pc = Input(UInt(XLen.W))
-    val src1 = Input(UInt(XLen.W))
-    val src2 = Input(UInt(XLen.W))
-    val imm  = Input(UInt(XLen.W))
+    val id2ex = Flipped(new ID2EXIO)
+    val ex2mem = new EX2MEMIO
+
     //aluctrl
-    val aluop_in = Input(Bool())
-    val aluoptype =  Input(UInt(2.W))
     //val Branch = Input(Bool())
     //
-    val jalr = Input(Bool())
-    val utype = Input(Bool())
-    val jtype = Input(Bool())
-    val res = Output(UInt(XLen.W))
-    val nxtpc = Output(UInt(XLen.W))
   })
   protected val alu_ctrl = Module(new ALUControl)
   protected val alu      = Module(new ALU)
   protected val beu      = Module(new BEU)
-  alu_ctrl.io.aluop_in := io.aluop_in
-  alu_ctrl.io.aluoptype := io.aluoptype
+  protected val src1  =  io.id2ex.src1
+  protected val src2  =  Mux(io.id2ex.alusrc,io.id2ex.imm,io.id2ex.src2)
+  /*             alu_ctrl           */
+  alu_ctrl.io.aluop_in := io.id2ex.aluop
+  alu_ctrl.io.aluoptype := io.id2ex.aluoptype
+  /*               alu               */
   alu.io.aluop := alu_ctrl.io.aluop_out
-  alu.io.src1 := io.src1
-  alu.io.src2 := io.src2
-  beu.io.pc := io.pc   
-  beu.io.imm := io.imm 
-  beu.io.alu_res := alu.io.res
-  beu.io.jalr := io.jalr
-  beu.io.jtype := io.jtype
+  alu.io.src1 := src1
+  alu.io.src2 := src2
+  /*              beu                */
+  beu.io.pc := io.id2ex.pc
+  beu.io.imm := io.id2ex.imm
+  beu.io.jtype := io.id2ex.jtype
   beu.io.zero := alu.io.zero
   beu.io.zero_jump := alu_ctrl.io.zero_jump
   beu.io.btype := alu_ctrl.io.btype
-  io.nxtpc := beu.io.nxtpc
 //temporal  need to be changed pc+4 != nxtpc j type
-  io.res := Mux(io.jtype,beu.io.pc_seq,Mux(io.utype,beu.io.pc_jmp,alu.io.res))
+  //ex2mem
+  io.ex2mem.jalr  := io.id2ex.jalr
+  io.ex2mem.branch:= beu.io.branch
+  io.ex2mem.pc_branch:= beu.io.pc_jmp
+  io.ex2mem.wdata := io.id2ex.src2
+  io.ex2mem.waddr := alu.io.res
+  io.ex2mem.pc_serial := io.id2ex.pc_serial
+  io.ex2mem.imm   := io.id2ex.imm
+  io.ex2mem.memread:= io.id2ex.memread
+  io.ex2mem.memwrite := io.id2ex.memwrite
+  io.ex2mem.memtoreg := io.id2ex.memtoreg
+  io.ex2mem.regwrite := io.id2ex.regwrite
+  io.ex2mem.utype    := io.id2ex.utype
+  io.ex2mem.jtype    := io.id2ex.jtype
+  io.ex2mem.lui      := io.id2ex.lui
+  io.ex2mem.wreg     := io.id2ex.wreg
 }

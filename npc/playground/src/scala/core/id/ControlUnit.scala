@@ -64,7 +64,7 @@ class ControlUnit extends Module with InstConfig {
     OPCODEDecoder.RTYPE1 -> List(rInstType,false.B,false.B,false.B,false.B,false.B,true.B,false.B,false.B,"b10".U,false.B), 
     OPCODEDecoder.JTYPE  -> List(jInstType,true.B,false.B,false.B,false.B,false.B,true.B,false.B,false.B,"b00".U,false.B),
     OPCODEDecoder.ITYPE2 -> List(iInstType,true.B,false.B,false.B,false.B,true.B,true.B,false.B,false.B,"b00".U,true.B),
-    OPCODEDecoder.LTYPE  -> List(rInstType,false.B,true.B,true.B,false.B,true.B,true.B,false.B,false.B,"b00".U,false.B),
+    OPCODEDecoder.LTYPE  -> List(iInstType,false.B,true.B,true.B,false.B,true.B,true.B,false.B,false.B,"b00".U,false.B),
     OPCODEDecoder.STYPE  -> List(sInstType,false.B,false.B,false.B,true.B,true.B,false.B,false.B,false.B,"b00".U,false.B),
     OPCODEDecoder.BTYPE  -> List(bInstType,false.B,false.B,false.B,false.B,false.B,false.B,false.B,false.B,"b01".U,false.B)
     )

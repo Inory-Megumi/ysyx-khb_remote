@@ -19,6 +19,22 @@ void pmem_read(long long Raddr, long long *Rdata)
     return;}
   Raddr &= ~0x7ull;//bus align
   (*Rdata) = *((long long *)guest_to_host(Raddr));
+  printf("read:  addr:%016llx content:%016llx\n",Raddr,(*Rdata));
+  return;
+}
+void pmem_write(long long Waddr, long long Wdata, char Wmask)
+{
+  if (!in_memory(Waddr))
+    return;
+  Waddr &= ~0x7ull;//bus align
+  for (int i = 0; i < 7; i++)
+  {
+    uint8_t *Vaddr = guest_to_host(Waddr);
+    if ((Wmask >> i) & 1)
+      *((uint8_t *)(Vaddr + i)) = ((Wdata) >> (i * 8)) & (0xFF);
+  }
+  printf("write: addr:%016llx Wmask:%08d content:%016llx\n",Waddr,Wmask,Wdata);
+  
   return;
 }
 extern "C" void inst_parse(long long pc,int inst){//interpret inst

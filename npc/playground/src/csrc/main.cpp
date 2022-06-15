@@ -1,4 +1,5 @@
 #include "npc.h"
+#include "util.h"
 
 CPU_state cpu;
 vluint64_t sim_time = 0;
@@ -17,6 +18,7 @@ long ld(char *img_file);
 void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
 void init_disasm(const char *triple);
 void check_state();
+void pmem_read(long long Raddr, long long *Rdata);
 #ifdef CONFIG_ITRACE
 void print_itrace()
 {
@@ -35,12 +37,22 @@ void print_itrace()
 #endif
 void exit_npc()
 {
+ /* for (int i = 0; i < 32; i++)
+      printf("%d: 0x%016lx\n",i,cpu.gpr[i]);
+*/
+  delete top;
+  delete contextp;
+  if(cpu.gpr[10] == 0)
+  printf("" LIGHT_GREEN "HIT GOOD TRAP!" NONE"\n");
+  else 
+  {printf("" LIGHT_RED "HIT BAD TRAP!" NONE"\n");
+  exit(1);}
+
 #ifdef CONFIG_VCD
   vcd_ptr->close();
   printf("vcd files dumped\n");
 #endif
-  delete top;
-  delete contextp;
+  
 }
 /*  simulation    */
 void reset()
@@ -131,7 +143,7 @@ int main(int argc, char **argv, char **env)
   vcd_ptr->open("waveform.vcd");
 #endif
   init_npc();
-  int sim_period = 20;
+  int sim_period = 200;
   while (cpu.state && sim_period--)
   {
     exec_once();

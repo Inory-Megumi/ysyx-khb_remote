@@ -1,5 +1,15 @@
 #include "npc.h"
 #define ebreak 0x00100073
+extern "C" void set_gpr_ptr(const svOpenArrayHandle r)
+{
+    uint64_t *cpu_gpr = NULL;
+    cpu_gpr = (uint64_t *)(((VerilatedDpiOpenVar *)r)->datap());
+    for (int i = 0; i < 32; i++)
+        cpu.gpr[i] = cpu_gpr[i];
+}
+
+
+
 void check_state()
 {  
     if(cpu.inst == ebreak)
