@@ -5,13 +5,14 @@ import chisel3.util._
 
 class ALU extends Module with InstConfig {
   val io = IO(new Bundle {
+    val wtype = Input(Bool())
     val aluop  = Input(UInt(AluOpLen.W))
     val src1 = Input(UInt(XLen.W))
     val src2 = Input(UInt(XLen.W))
     val res  = Output(UInt(XLen.W))
     val zero = Output(Bool())
   })
-  io.res := MuxLookup(
+  val res = MuxLookup(
     io.aluop,
     0.U(XLen.W),
     Seq(
@@ -27,5 +28,6 @@ class ALU extends Module with InstConfig {
       AluOpSRA   -> (io.src1.asSInt >> io.src2(5, 0)).asUInt
     )
   )
+  io.res := Mux(io.wtype,SignExt(res(31, 0), XLen),res)
   io.zero := Mux((io.res === 0.U),true.B,false.B)
 }

@@ -20,4 +20,5 @@ class EX2MEMIO extends Bundle with IOConfig {
   //attention
   val branch   = Output(Bool())
   val jalr     = Output(Bool())
+  val funct3   = Output(UInt(3.W))
 }

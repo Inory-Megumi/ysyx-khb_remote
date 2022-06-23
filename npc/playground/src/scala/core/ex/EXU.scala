@@ -21,7 +21,9 @@ class EXU extends Module with InstConfig {
   /*             alu_ctrl           */
   alu_ctrl.io.aluop_in := io.id2ex.aluop
   alu_ctrl.io.aluoptype := io.id2ex.aluoptype
+  alu_ctrl.io.ritype := io.id2ex.alusrc
   /*               alu               */
+  alu.io.wtype := io.id2ex.wtype  //addiw
   alu.io.aluop := alu_ctrl.io.aluop_out
   alu.io.src1 := src1
   alu.io.src2 := src2
@@ -49,4 +51,5 @@ class EXU extends Module with InstConfig {
   io.ex2mem.jtype    := io.id2ex.jtype
   io.ex2mem.lui      := io.id2ex.lui
   io.ex2mem.wreg     := io.id2ex.wreg
+  io.ex2mem.funct3   := io.id2ex.aluop(3,1)
 }

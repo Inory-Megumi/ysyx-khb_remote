@@ -17,9 +17,10 @@ void pmem_read(long long Raddr, long long *Rdata)
   if (!in_memory(Raddr))
   {*Rdata = 0;
     return;}
+  long long raddr = Raddr;
   Raddr &= ~0x7ull;//bus align
   (*Rdata) = *((long long *)guest_to_host(Raddr));
-  printf("read:  addr:%016llx content:%016llx\n",Raddr,(*Rdata));
+  printf("read:  addr:%016llx content:%016llx\n",raddr,(*Rdata));
   return;
 }
 void pmem_write(long long Waddr, long long Wdata, char Wmask)

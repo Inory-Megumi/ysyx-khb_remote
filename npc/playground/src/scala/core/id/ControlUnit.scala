@@ -10,7 +10,7 @@ object OPCODEDecoder {
   // I type inst
   //ADDI -- ADDIW
   def ITYPE0  = BitPat("b0010011")
-  def ITYPE1 = BitPat("b0011011")
+  def ITYPE1 = BitPat("b0011011") //w
 
   // U type inst
   // LUI - rd = {imm, 12b'0}
@@ -22,8 +22,7 @@ object OPCODEDecoder {
   // R type inst
   // ADD - ADDW
   def RTYPE0  = BitPat("b0110011")
-  def RTYPE1 = BitPat("b0111011")
-
+  def RTYPE1 = BitPat("b0111011") //w
   /* Control Transfer Instructions */
   // J type inst
   def JTYPE = BitPat("b1101111")
@@ -56,19 +55,19 @@ class ControlUnit extends Module with InstConfig {
   protected val decodeTable = Array(
     //list structure(InstType,jtype,memread,memtoreg,memwrite,alusrc,regwrite,utype,lui,aluop,jalr)
     // aluop define : 00 : s/l/j  01 : arithmetic 10 : b
-    OPCODEDecoder.ITYPE0 -> List(iInstType,false.B,false.B,false.B,false.B,true.B,true.B,false.B,false.B,"b10".U,false.B),
-    OPCODEDecoder.ITYPE1 -> List(iInstType,false.B,false.B,false.B,false.B,true.B,true.B,false.B,false.B,"b10".U,false.B),
-    OPCODEDecoder.UTYPE0 -> List(uInstType,false.B,false.B,false.B,false.B,false.B,true.B,true.B,true.B,"b00".U,false.B),
-    OPCODEDecoder.UTYPE1 -> List(uInstType,false.B,false.B,false.B,false.B,false.B,true.B,true.B,false.B,"b00".U,false.B), 
-    OPCODEDecoder.RTYPE0 -> List(rInstType,false.B,false.B,false.B,false.B,false.B,true.B,false.B,false.B,"b10".U,false.B),  
-    OPCODEDecoder.RTYPE1 -> List(rInstType,false.B,false.B,false.B,false.B,false.B,true.B,false.B,false.B,"b10".U,false.B), 
-    OPCODEDecoder.JTYPE  -> List(jInstType,true.B,false.B,false.B,false.B,false.B,true.B,false.B,false.B,"b00".U,false.B),
-    OPCODEDecoder.ITYPE2 -> List(iInstType,true.B,false.B,false.B,false.B,true.B,true.B,false.B,false.B,"b00".U,true.B),
-    OPCODEDecoder.LTYPE  -> List(iInstType,false.B,true.B,true.B,false.B,true.B,true.B,false.B,false.B,"b00".U,false.B),
-    OPCODEDecoder.STYPE  -> List(sInstType,false.B,false.B,false.B,true.B,true.B,false.B,false.B,false.B,"b00".U,false.B),
-    OPCODEDecoder.BTYPE  -> List(bInstType,false.B,false.B,false.B,false.B,false.B,false.B,false.B,false.B,"b01".U,false.B)
+    OPCODEDecoder.ITYPE0 -> List(iInstType,false.B,false.B,false.B,false.B,true.B,true.B,false.B,false.B,"b10".U,false.B,false.B),
+    OPCODEDecoder.ITYPE1 -> List(iInstType,false.B,false.B,false.B,false.B,true.B,true.B,false.B,false.B,"b10".U,false.B,true.B),
+    OPCODEDecoder.UTYPE0 -> List(uInstType,false.B,false.B,false.B,false.B,false.B,true.B,true.B,true.B,"b00".U,false.B,false.B),
+    OPCODEDecoder.UTYPE1 -> List(uInstType,false.B,false.B,false.B,false.B,false.B,true.B,true.B,false.B,"b00".U,false.B,false.B), 
+    OPCODEDecoder.RTYPE0 -> List(rInstType,false.B,false.B,false.B,false.B,false.B,true.B,false.B,false.B,"b10".U,false.B,false.B),  
+    OPCODEDecoder.RTYPE1 -> List(rInstType,false.B,false.B,false.B,false.B,false.B,true.B,false.B,false.B,"b10".U,false.B,true.B), 
+    OPCODEDecoder.JTYPE  -> List(jInstType,true.B,false.B,false.B,false.B,false.B,true.B,false.B,false.B,"b00".U,false.B,false.B),
+    OPCODEDecoder.ITYPE2 -> List(iInstType,true.B,false.B,false.B,false.B,true.B,true.B,false.B,false.B,"b00".U,true.B,false.B),
+    OPCODEDecoder.LTYPE  -> List(iInstType,false.B,true.B,true.B,false.B,true.B,true.B,false.B,false.B,"b00".U,false.B,false.B),
+    OPCODEDecoder.STYPE  -> List(sInstType,false.B,false.B,false.B,true.B,true.B,false.B,false.B,false.B,"b00".U,false.B,false.B),
+    OPCODEDecoder.BTYPE  -> List(bInstType,false.B,false.B,false.B,false.B,false.B,false.B,false.B,false.B,"b01".U,false.B,false.B)
     )
-    protected val defRes   = List(iInstType,false.B,false.B,false.B,false.B,true.B,false.B,false.B,false.B,"b00".U,false.B)
+    protected val defRes   = List(iInstType,false.B,false.B,false.B,false.B,true.B,false.B,false.B,false.B,"b00".U,false.B,false.B)
     protected val decRes   = ListLookup(io.opcode, defRes, decodeTable)//decode
     io.cuio.jtype := decRes(1)
     io.cuio.memread := decRes(2)
@@ -81,4 +80,5 @@ class ControlUnit extends Module with InstConfig {
     io.immtype := decRes(0)
     io.aluop := decRes(9)
     io.cuio.jalr := decRes(10)
+    io.cuio.wtype := decRes(11)
     }

@@ -22,6 +22,7 @@ class ID2EXIO extends Bundle with IOConfig {
   val utype    = Output(Bool())
   val lui      = Output(Bool())
   val jalr     = Output(Bool())
+  val wtype    = Output(Bool())
 }
 
  

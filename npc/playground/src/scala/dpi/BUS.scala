@@ -39,6 +39,6 @@ class D_BUS extends Module with InstConfig{
     mem.io.memwrite := io.dbus.memwrite
     mem.io.addr := io.dbus.addr
     mem.io.wdata := io.dbus.wdata
-    mem.io.wmask := "hff".U  //default
+    mem.io.wmask := io.dbus.wmask  //default
     mem.io.rdata <> io.dbus.rdata
 }

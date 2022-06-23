@@ -14,7 +14,7 @@ class BEU extends Module with InstConfig {
     val zero_jump = Input(Bool())
     val btype = Input(Bool())
   })
-  val bjump = io.zero & io.zero_jump && io.btype
+  val bjump = ~(io.zero ^ io.zero_jump) && io.btype
   io.branch := (io.jtype | bjump) 
   val nxtpc_jmp = io.pc + io.imm 
   io.pc_jmp := nxtpc_jmp

@@ -37,6 +37,7 @@ class IDU extends Module with InstConfig {
   io.id2ex.lui     := controlunit.io.cuio.lui
   io.id2ex.jalr    := controlunit.io.cuio.jalr
   io.id2ex.aluoptype := controlunit.io.aluop
+  io.id2ex.wtype   := controlunit.io.cuio.wtype
   ////*                immeExten               *///////
   immExten.io.inst <> inst
   immExten.io.instType <> controlunit.io.immtype

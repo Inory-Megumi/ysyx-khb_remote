@@ -19,6 +19,8 @@ void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
 void init_disasm(const char *triple);
 void check_state();
 void pmem_read(long long Raddr, long long *Rdata);
+bool check_regs_npc(CPU_state ref_cpu);
+void init_so(char *ref_so_file, long img_size);
 #ifdef CONFIG_ITRACE
 void print_itrace()
 {
@@ -35,25 +37,7 @@ void print_itrace()
   }
 }
 #endif
-void exit_npc()
-{
- /* for (int i = 0; i < 32; i++)
-      printf("%d: 0x%016lx\n",i,cpu.gpr[i]);
-*/
-  delete top;
-  delete contextp;
-  if(cpu.gpr[10] == 0)
-  printf("" LIGHT_GREEN "HIT GOOD TRAP!" NONE"\n");
-  else 
-  {printf("" LIGHT_RED "HIT BAD TRAP!" NONE"\n");
-  exit(1);}
 
-#ifdef CONFIG_VCD
-  vcd_ptr->close();
-  printf("vcd files dumped\n");
-#endif
-  
-}
 /*  simulation    */
 void reset()
 {
@@ -79,6 +63,7 @@ void cpu_sim_once()
 }
 void exec_once()
 {
+  printf("" BLUE "One period begin" NONE "\n");
   cpu_sim_once();
   printf("0x%08lx: 0x%08x\n",cpu.pc,cpu.inst);
 #ifdef CONFIG_ITRACE
@@ -89,19 +74,17 @@ void exec_once()
   itrace_buf_cnt++;
   itrace_buf_cnt %= 16;
 #endif
-/*
-#ifdef CONFIG_VCD
-  vcd_ptr->dump(sim_time++);
-#endif */
 #ifdef CONFIG_DIFFTEST
   ref_difftest_exec(1);
   CPU_state ref_cpu;
   ref_difftest_regcpy(&ref_cpu, DIFFTEST_TO_DUT);
-  printf("check at nemu_pc=%lx, npc_pc=%lx\n", cpu_npc.pc, ref_cpu.pc);
+  printf("check at nemu_pc=%lx, npc_pc=%lx\n", cpu.pc, ref_cpu.pc);
   if (!check_regs_npc(ref_cpu))
-    exit_npc(-1);
+    {printf("" RED "Incorrect implement!!!" NONE "\n");
+      cpu.state = false;}
 #endif
   check_state();
+  printf("" BLUE "One period end" NONE "\n\n");
 }
 void init_npc()
 {
@@ -109,6 +92,26 @@ void init_npc()
   reset();
   cpu.state = true;
   printf("0x%08lx: 0x%08x\n",cpu.pc,cpu.inst);
+}
+void exit_npc()
+{
+ /* for (int i = 0; i < 32; i++)
+      printf("%d: 0x%016lx\n",i,cpu.gpr[i]);
+*/
+  cpu_sim_once();
+  delete top;
+  delete contextp;
+  if(cpu.gpr[10] == 0 )
+  printf("" LIGHT_GREEN "HIT GOOD TRAP!" NONE"\n");
+  else 
+  {printf("" LIGHT_RED "HIT BAD TRAP!" NONE"\n");
+  }
+
+#ifdef CONFIG_VCD
+  vcd_ptr->close();
+  printf("vcd files dumped\n");
+#endif
+  
 }
 
 static int parse_args(int argc, char *argv[])
@@ -143,7 +146,11 @@ int main(int argc, char **argv, char **env)
   vcd_ptr->open("waveform.vcd");
 #endif
   init_npc();
-  int sim_period = 200;
+  #ifdef CONFIG_DIFFTEST
+  init_so("/home/khb/ysyx-workbench/nemu/build/riscv64-nemu-interpreter-so", img_size);
+#endif
+
+  int sim_period = -1;
   while (cpu.state && sim_period--)
   {
     exec_once();

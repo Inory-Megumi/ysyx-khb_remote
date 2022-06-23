@@ -10,6 +10,7 @@ class ALUControl extends Module with InstConfig{
         val aluop_out = Output(UInt(4.W))
         val zero_jump = Output(Bool())
         val btype = Output(Bool())
+        val ritype = Input(Bool())
     })
     val zero_jump = Wire(Bool())
     io.zero_jump := zero_jump
@@ -55,7 +56,12 @@ class ALUControl extends Module with InstConfig{
             }
         }
         is("b10".U){
+            when( io.ritype && io.aluop_in(3,1) === "b000".U )
+            {
+            io.aluop_out := AluOpADD}
+            .otherwise {
             io.aluop_out := io.aluop_in
+            }
         }
         is("b11".U){
             io.aluop_out := AluOpADD

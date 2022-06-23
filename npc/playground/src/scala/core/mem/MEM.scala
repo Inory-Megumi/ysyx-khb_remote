@@ -11,6 +11,7 @@ class MEM extends Module with InstConfig {
     val mem2if = new MEM2IFIO
   })
   val datamem = Module(new D_BUS)
+  val memControl = Module(new MemControl)
   io.mem2wb.alu_res := io.ex2mem.waddr
   io.mem2wb.imm := io.ex2mem.imm
   io.mem2wb.pc_branch := io.ex2mem.pc_branch
@@ -30,6 +31,12 @@ class MEM extends Module with InstConfig {
   datamem.io.dbus.wdata   := io.ex2mem.wdata //rs2
   datamem.io.dbus.memread   :=  io.ex2mem.memread
   datamem.io.dbus.memwrite  :=  io.ex2mem.memwrite
-  datamem.io.dbus.rdata     <>  io.mem2wb.mem_data
-
+  
+  
+/*MemControl*/
+  memControl.io.addr := io.ex2mem.waddr(2,0)
+  memControl.io.data := Mux(io.ex2mem.memwrite,io.ex2mem.wdata,datamem.io.dbus.rdata)
+  memControl.io.funct3 := io.ex2mem.funct3
+  memControl.io.data_out <> io.mem2wb.mem_data
+  memControl.io.wmask <> datamem.io.dbus.wmask
 }
